@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::iter::zip;
 
 use nom::character::complete::{digit1, newline, space1};
@@ -37,8 +38,38 @@ pub fn part_one(input: &str) -> Option<u32> {
     Some(zip(lists.0, lists.1).fold(0, |acc, e| acc + e.0.abs_diff(e.1)))
 }
 
+#[derive(Debug)]
+struct Occurrences(HashMap<u32, u32>);
+
+impl FromIterator<u32> for Occurrences {
+    fn from_iter<I: IntoIterator<Item = u32>>(iter: I) -> Self {
+        let mut m = HashMap::new();
+
+        for i in iter {
+            if let Some(count) = m.get(&i) {
+                m.insert(i, count + 1);
+            } else {
+                m.insert(i, 1);
+            }
+        }
+
+        Occurrences(m)
+    }
+}
+
 pub fn part_two(input: &str) -> Option<u32> {
-    None
+    let lists = parse_lists(input);
+
+    let left_occurences: Occurrences = lists.0.into_iter().collect();
+    let right_occurences: Occurrences = lists.1.into_iter().collect();
+
+    Some(left_occurences.0.into_iter().fold(0, |acc, e| {
+        if let Some(right_count) = right_occurences.0.get(&e.0) {
+            acc + e.0 * e.1 * right_count
+        } else {
+            acc
+        }
+    }))
 }
 
 #[cfg(test)]
@@ -54,6 +85,6 @@ mod tests {
     #[test]
     fn test_part_two() {
         let result = part_two(&advent_of_code::template::read_file("examples", DAY));
-        assert_eq!(result, None);
+        assert_eq!(result, Some(31));
     }
 }
